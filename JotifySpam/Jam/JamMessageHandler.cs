@@ -38,5 +38,21 @@ namespace JotifySpam.Jam
             client.Logger.Info("Recieved ack. Message:", message?.message, "| Ping (ms):", JamClient.UTCNow() - response.timestamp);
             client.Ack();
         }
+
+        public void SetTimePosition(ResponseObject response)
+        {
+            SetTimePosition? message = response.ParseMessage<SetTimePosition>();
+
+            if(message == null)
+            {
+                client.Logger.Error("Failed to parse SetTimePosition body.");
+                return;
+            }
+
+            foreach (JamClient client in ClientRegistry.JamClients)
+            {
+                client.SendMessage(new SetTimePosition(message.position, message.synctime));
+            }
+        }
     }
 }

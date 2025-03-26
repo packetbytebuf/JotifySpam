@@ -97,7 +97,7 @@ namespace JotifySpam.Jam
         public void SendMessage(GenericMessage message)
         {
             byte[] responseBuffer = Encoding.UTF8.GetBytes(PackageMessage(message));
-            WebSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            WebSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, cts.Token);
         }
 
         public async Task ClientHandler()
@@ -106,7 +106,7 @@ namespace JotifySpam.Jam
             {
                 while (WebSocket.State == WebSocketState.Open)
                 {
-                    WebSocketReceiveResult result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(messageBuffer), CancellationToken.None);
+                    WebSocketReceiveResult result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(messageBuffer), cts.Token);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
                         Disconnect();
@@ -127,7 +127,7 @@ namespace JotifySpam.Jam
                     //}
 
                     byte[] responseBuffer = Encoding.UTF8.GetBytes(PackageMessage(new Ack()));
-                    await WebSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
+                    await WebSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, cts.Token);
                 }
             }
             catch (WebSocketException ex)
@@ -152,7 +152,7 @@ namespace JotifySpam.Jam
         {
             WebSocket?.CloseAsync(WebSocketCloseStatus.NormalClosure, reason, CancellationToken.None);
 
-            JamClientRegistry.Clients.Remove(this);
+            ClientRegistry.JamClients.Remove(this);
 
             cts?.Cancel();
             cts?.Dispose();

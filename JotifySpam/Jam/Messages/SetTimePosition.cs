@@ -8,10 +8,10 @@ namespace JotifySpam.Jam.Messages
 {
     public class SetTimePosition : GenericMessage
     {
-        public SetTimePosition(int position)
+        public SetTimePosition(int position, long? synctime=null)
         {
             this.position = position;
-            this.synctime = JamClient.UTCNow() + 1000;
+            this.synctime = synctime ?? JamClient.UTCNow() + 1000;
         }
 
         public int position;

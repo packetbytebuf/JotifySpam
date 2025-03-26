@@ -8,14 +8,17 @@ using System.Threading.Tasks;
 
 namespace JotifySpam.Jam
 {
-    internal class SpamMessageHandler
+    // TODO: also replace with generic MessageHandler. sooo much repetition
+    public class SpamMessageHandler
     {
-        public SpamMessageHandler() { }
+        private DesktopClient client;
+        public SpamMessageHandler(DesktopClient client) { this.client = client; }
 
-        private static Dictionary<string, Action<ResponseObject>> Handlers = new Dictionary<string, Action<ResponseObject>>() {
-            { "ACK", (response) => Ack(response) }
+        private static Dictionary<string, Action<SpamMessageHandler, ResponseObject>> Handlers = new Dictionary<string, Action<SpamMessageHandler, ResponseObject>>() {
+            { "ACK", (handler, message) => handler.Ack(message) },
+            { "SETTIME", (handler, message) => handler.SetTimePosition(message) }
         };
-        public static bool HandleMessage(ResponseObject? response)
+        public bool HandleMessage(ResponseObject? response)
         {
             if (response == null)
             {
@@ -23,9 +26,9 @@ namespace JotifySpam.Jam
                 return false;
             }
 
-            if (Handlers.TryGetValue(response.type ?? "", out Action<ResponseObject>? impl))
+            if (Handlers.TryGetValue(response.type ?? "", out Action<SpamMessageHandler, ResponseObject>? impl))
             {
-                impl.Invoke(response);
+                impl.Invoke(this, response);
                 return true;
             }
             else
@@ -37,10 +40,32 @@ namespace JotifySpam.Jam
             return false;
         }
 
-        public static void Ack(ResponseObject response)
+        public void Ack(ResponseObject response)
         {
             AckC2CPacket? message = response.ParseMessage<AckC2CPacket>();
             Program.logger.Info("IM PICKLE RIIIIIICK!!!!");
+        }
+
+        public void SetTimePosition(ResponseObject response)
+        {
+            //SetTimePositionC2CPacket? message = response.ParseMessage<SetTimePositionC2CPacket>();
+            //foreach(DesktopClient client in ClientRegistry.DesktopClients)
+            //{
+            //    client.SendMessage(new SetTimePositionC2CPacket());
+            //}
+
+            SetTimePosition? message = response.ParseMessage<SetTimePosition>();
+
+            if (message == null)
+            {
+                client.Logger.Error("Failed to parse SetTimePosition body.");
+                return;
+            }
+
+            foreach (JamClient client in ClientRegistry.JamClients)
+            {
+                client.SendMessage(new SetTimePosition(message.position, message.synctime));
+            }
         }
     }
 }
